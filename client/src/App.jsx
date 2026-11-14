@@ -12,7 +12,10 @@ export default function App() {
         if (!res.ok) throw new Error('Could not load tasks');
         return res.json();
       })
-      .then((data) => setTasks(Array.isArray(data) ? data : []))
+      .then((data) => {
+        setTasks(Array.isArray(data) ? data : []);
+        setError('');
+      })
       .catch(() => setError('Could not load tasks. Is the API running?'));
   }, []);
 
@@ -41,12 +44,14 @@ export default function App() {
     if (!res.ok) return setError('Could not update task');
     const updated = await res.json();
     setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    setError('');
   }
 
   async function deleteTask(id) {
     const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     if (!res.ok && res.status !== 404) return setError('Could not delete task');
     setTasks((prev) => prev.filter((t) => t.id !== id));
+    setError('');
   }
 
   return (
