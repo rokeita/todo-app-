@@ -3,12 +3,20 @@ import { useEffect, useState } from 'react';
 export default function App() {
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState('');
+  const [error, setError] = useState('');
 
   // Load tasks once when the page opens
   useEffect(() => {
     fetch('/api/tasks')
-      .then((res) => res.json())
-      .then(setTasks);
+      .then((res) => {
+        if (!res.ok) throw new Error('Could not load tasks');
+        return res.json();
+      })
+      .then((data) => {
+        setTasks(Array.isArray(data) ? data : []);
+        setError('');
+      })
+      .catch(() => setError('Could not load tasks. Is the API running?'));
   }, []);
 
   async function addTask(e) {
@@ -20,9 +28,11 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title }),
     });
+    if (!res.ok) return setError('Could not add task');
     const task = await res.json();
-    setTasks([...tasks, task]);
+    setTasks((prev) => [...prev, task]);
     setNewTitle('');
+    setError('');
   }
 
   async function toggleTask(task) {
@@ -31,18 +41,23 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ done: !task.done }),
     });
+    if (!res.ok) return setError('Could not update task');
     const updated = await res.json();
-    setTasks(tasks.map((t) => (t.id === updated.id ? updated : t)));
+    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    setError('');
   }
 
   async function deleteTask(id) {
-    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-    setTasks(tasks.filter((t) => t.id !== id));
+    const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 404) return setError('Could not delete task');
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setError('');
   }
 
   return (
     <main>
       <h1>My To-Do List</h1>
+      {error && <p className="error">{error}</p>}
       <form onSubmit={addTask}>
         <input
           value={newTitle}

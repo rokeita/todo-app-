@@ -40,3 +40,7 @@ li {
 }
 li.done label { text-decoration: line-through; color: #999; }
 label { display: flex; gap: 0.5rem; align-items: center; }
+
+.error {
+  color: #c0392b;
+}
